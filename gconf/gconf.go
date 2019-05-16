@@ -27,8 +27,8 @@ func init() {
 	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
 
 	if len(host) > 0 || len(port) > 0 {
-		log.Printf("app in k8s,use hc://gconf.kube-system/")
-		url = "hc://gconf.kube-system/"
+		log.Printf("app in k8s,use http://gconf.kube-system/")
+		url = "http://gconf.kube-system/"
 	}
 
 	initRegionId()
@@ -101,26 +101,26 @@ func getUrl() string {
 	log.Printf("workEnv %s workIdc %s", workEnv, workIdc)
 	if workEnv == "dev" && workIdc == "ofc" {
 		RegionId = 3
-		return "hc://gconf.services.dev.ofc/"
+		return "http://gconf.services.dev.ofc/"
 	}
 	if workEnv == "test" && workIdc == "jx" {
 		RegionId = 8
-		return "hc://gconf.services.test.jx/"
+		return "http://gconf.services.test.jx/"
 	}
 	if workEnv == "product" && workIdc == "sh" {
 		RegionId = 1
-		return "hc://gconf.services.product.sh/"
+		return "http://gconf.services.product.sh/"
 	}
 	if workEnv == "prepare" && workIdc == "sh" {
 		RegionId = 11
-		return "hc://gconf.services.product.sh/"
+		return "http://gconf.services.product.sh/"
 	}
 	if workEnv == "product" && workIdc == "ali" {
 		RegionId = 2
-		return "hc://gconf.services.product.ali/"
+		return "http://gconf.services.product.ali/"
 	}
 	RegionId = 3
-	return "hc://gconf.services.dev.ofc/"
+	return "http://gconf.services.dev.ofc/"
 }
 
 func GetConfigCollection(appId string) *ConfigCollection {
