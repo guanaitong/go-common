@@ -1,4 +1,4 @@
-package gconf_client
+package gconf
 
 import (
 	"crypto/rand"
