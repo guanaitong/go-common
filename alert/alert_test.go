@@ -13,7 +13,7 @@ func TestSendByAppName(t *testing.T) {
 }
 
 func TestSendByCorpCodes(t *testing.T) {
-	SendByCorpCodes(1, "TestSendByCorpCodes", "HB266")
+	SendByCorpCodes(7, "TestSendByCorpCodes", "HB266")
 	SendByCorpCodes(1, "TestSendByCorpCodes1", "HB266", "HB533")
 
 	time.Sleep(time.Second * 5)

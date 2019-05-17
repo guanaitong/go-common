@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	URL = "hc://message.frigate.devops.wuxingdev.cn"
+	URL = "http://message.frigate.devops.wuxingdev.cn"
 
 	BY_CORPCODE_URL = URL + "/message/sendMsgsToUsersByQiyeWeChatId"
 
@@ -57,7 +57,7 @@ func init() {
 				for data := range ch {
 					e := send(data)
 					if e != nil {
-						log.Printf("send fail,data:%d, error:%s", data, e.Error())
+						log.Printf("send fail,data:%v, error:%s", data, e.Error())
 					}
 				}
 
