@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"github.com/guanaitong/go-common/task"
 	"io/ioutil"
 	"log"
 	mathRand "math/rand"
@@ -33,34 +34,27 @@ func init() {
 
 	initRegionId()
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Println("recover=>" + fmt.Sprint(r))
-			}
-		}()
-		for {
-			if len(cache) == 0 {
-				time.Sleep(time.Second * 10)
-				continue
-			}
-			var keys []string
-			for k := range cache {
-				keys = append(keys, k)
-			}
-			configAppIdList := strings.Join(keys, ",")
-			needChangeAppIdList, err := httpGetListResp(url + "api/watch?configAppIdList=" + configAppIdList + "&clientId=" + clientId)
-			if err != nil {
-				log.Printf("wath error" + err.Error())
-				time.Sleep(time.Second * 10)
-				continue
-			}
-
-			for _, appId := range needChangeAppIdList {
-				cache[appId].refreshData()
-			}
+	task.StartBackgroundTask("gconf-refresher", time.Millisecond*100, func() {
+		if len(cache) == 0 {
+			time.Sleep(time.Second * 2)
+			return
 		}
-	}()
+		var keys []string
+		for k := range cache {
+			keys = append(keys, k)
+		}
+		configAppIdList := strings.Join(keys, ",")
+		needChangeAppIdList, err := httpGetListResp(url + "api/watch?configAppIdList=" + configAppIdList + "&clientId=" + clientId)
+		if err != nil {
+			log.Printf("wath error" + err.Error())
+			time.Sleep(time.Second * 10)
+			return
+		}
+
+		for _, appId := range needChangeAppIdList {
+			cache[appId].refreshData()
+		}
+	})
 }
 
 func uuid() (uuid string) {
