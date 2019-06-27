@@ -2,8 +2,8 @@ package hc
 
 import (
 	"encoding/json"
-	"github.com/golang/glog"
 	"io/ioutil"
+	"k8s.io/klog"
 	"net/http"
 )
 
@@ -19,7 +19,7 @@ func newResp(req *http.Request, resp *http.Response) (*Resp, error) {
 		return nil, err
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		glog.Warning("resp status code is " + resp.Status + " ,url is " + req.URL.String() + " ,body is " + string(d))
+		klog.Warning("resp status code is " + resp.Status + " ,url is " + req.URL.String() + " ,body is " + string(d))
 	}
 	res := Resp{
 		raw:      resp,

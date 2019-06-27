@@ -6,10 +6,8 @@ import (
 )
 
 func TestSendByAppName(t *testing.T) {
-
 	SendByAppName(1, "TestSendByAppName")
 	time.Sleep(time.Second * 5)
-
 }
 
 func TestSendByCorpCodes(t *testing.T) {

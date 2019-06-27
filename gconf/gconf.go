@@ -16,7 +16,6 @@ import (
 	"time"
 )
 
-// gconf client就不适用glog了，因为glog需要flag parse，过多依赖不好。
 var cache = map[string]*ConfigCollection{}
 var RegionId int
 var url string
