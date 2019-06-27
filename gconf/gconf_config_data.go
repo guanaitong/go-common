@@ -27,19 +27,37 @@ type configData struct {
 func (c *configData) unmarshal(v interface{}) error {
 	elem := reflect.ValueOf(v).Elem()
 
+L:
 	for i := 0; i < elem.NumField(); i++ {
-
 		fieldInfo := elem.Field(i)
 		if !fieldInfo.CanSet() {
 			continue
 		}
+
 		structField := elem.Type().Field(i) // a reflect.StructField
-		lowName := strings.ToLower(structField.Name)
+
+		//优先匹配tag:config
+		var configTagName = structField.Tag.Get("config")
+		if configTagName != "" {
+			var lowName = strings.ToLower(configTagName)
+			for k, fieldData := range c.structuredData {
+				if lowName == strings.ToLower(k) { //命中
+					fieldData.Set(fieldInfo)
+					continue L
+				}
+			}
+			continue
+		}
+
+		//后匹配字段名:兼容Java驼峰命名和properties命名特性小写下划线
+		var lowName = strings.ToLower(structField.Name)
 		for k, fieldData := range c.structuredData {
 			if lowName == strings.ToLower(strings.Replace(k, "_", "", -1)) { //命中
 				fieldData.Set(fieldInfo)
+				continue L
 			}
 		}
+
 	}
 
 	return nil

@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 )
 
 type es struct {
@@ -14,23 +13,41 @@ type es struct {
 	Port        int32
 }
 
+type impower struct {
+	Path   string `config:"path"`
+	Cmd    string `config:"cmd"`
+	Period int    `config:"period"`
+	HasX   bool   `config:"has"`
+}
+
 func TestGetConfigCollection(t *testing.T) {
+	t.Log("[impower]-------------------------------")
+	d1 := GetConfigCollection("impower")
+	t.Log(d1, d1.AsMap())
+
+	dm1 := d1.GetConfigAsStructuredMap("deny.properties")
+	t.Log(dm1)
+
+	imp := new(impower)
+	if err := d1.GetConfigAsBean("deny.properties", imp); err != nil {
+		t.Error(err)
+	} else {
+		t.Logf("%+v\n", imp)
+	}
+
+	t.Log("[userdoor]------------------------------")
 	c := GetConfigCollection("userdoor")
 	v1 := c.GetConfig("es.properties")
-	fmt.Println(v1)
-	fmt.Println(c.AsMap())
+	t.Log(v1, v1, c.AsMap())
+
 	c1 := GetConfigCollection("userdoor")
-	fmt.Println(c1.AsMap())
+	t.Log(c1.AsMap())
 
-	v2 := c1.GetConfigAsStructuredMap("es.properties")
-	fmt.Println(v2)
 	p := new(es)
+	v2 := c1.GetConfigAsStructuredMap("es.properties")
 	c1.GetConfigAsBean("es.properties", p)
-	fmt.Println(fmt.Sprint(*p))
+	t.Log(v2, p)
 
-	c2 := GetConfigCollection("jaeger")
-	fmt.Println(c2.AsMap())
-	time.Sleep(time.Second * 120)
 }
 
 type testBean struct {
