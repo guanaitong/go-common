@@ -23,8 +23,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"gitlab.wuxingdev.cn/go/util/runtime"
 )
 
 func TestUntil(t *testing.T) {
