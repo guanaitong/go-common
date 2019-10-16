@@ -19,12 +19,11 @@ package wait
 import (
 	"errors"
 	"fmt"
+	"github.com/guanaitong/go-common/runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"gitlab.wuxingdev.cn/go/util/runtime"
 )
 
 func TestUntil(t *testing.T) {
