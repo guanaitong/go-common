@@ -50,3 +50,23 @@ func TestPostJson(t *testing.T) {
 
 	fmt.Println(fmt.Sprint(m))
 }
+
+func TestPostFormFile(t *testing.T) {
+	params := map[string]interface{}{
+		"FormFile": "",
+		"FileName": "",
+		"Auth": map[string]string{
+			"username": "",
+			"passport": "",
+		},
+		"Headers": map[string]string{
+			"x-code":   "123",
+		},
+	}
+	resp, err := PostFormFile("", params)
+	if err != nil {
+		t.Error(err)
+	} else {
+		t.Log(resp.StatusCode(), resp.AsString())
+	}
+}

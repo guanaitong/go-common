@@ -5,9 +5,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net"
 	"net/http"
 	u "net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -86,6 +89,74 @@ func PostForm(url string, params map[string]interface{}) (*Resp, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return Request(req)
+}
+
+func PostFormFile(url string, params map[string]interface{}) (*Resp, error) {
+	// build params
+	fieldName, ok := params["FormFile"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Not found 'FormFile'")
+	}
+	fileName, ok := params["FileName"].(string)
+	if !ok {
+		return nil, fmt.Errorf("Not found 'FileName'")
+	}
+
+	// Create buffer
+	buf := new(bytes.Buffer)
+
+	// caveat IMO dont use this for large files
+	// create a tmpfile and assemble your multipart from there (not tested)
+	w := multipart.NewWriter(buf)
+
+	// Create file field
+	fw, err := w.CreateFormFile(fieldName, fileName)
+	if err != nil {
+		return nil, err
+	}
+	fd, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	if fd != nil {
+		defer fd.Close()
+	}
+
+	// Write file field from file to upload
+	_, err = io.Copy(fw, fd)
+	if err != nil {
+		return nil, err
+	}
+
+	// required
+	if w != nil {
+		w.Close()
+	}
+
+	req, err := http.NewRequest("POST", url, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Important if you do not close the multipart writer you will not have a
+	// terminating boundry
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	// Auth
+	if auth, ok := params["Auth"].(map[string]string); ok {
+		username, _ := auth["username"]
+		passport, _ := auth["passport"]
+		req.SetBasicAuth(username, passport)
+	}
+
+	// Headers
+	if headers, ok := params["Headers"].(map[string]string); ok {
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+	}
+
 	return Request(req)
 }
 
