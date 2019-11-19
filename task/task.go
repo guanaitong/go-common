@@ -14,7 +14,7 @@ func StartBackgroundTask(name string, period time.Duration, task func()) {
 			func() {
 				defer runtime.HandleCrashWithConfig(false, func(r interface{}) {
 					callers := runtime.GetCallers(r)
-					msg := fmt.Sprintf("goroutineName:%s,\nObserved a panic: %#v (%v)\n%v", name, r, r, callers)
+					msg := fmt.Sprintf("GoroutineName:%s,\nObserved a panic: %#v (%v)\n%v", name, r, r, callers)
 					alert.SendByAppName(4, msg)
 				})
 				task()
@@ -30,7 +30,7 @@ func StartAsyncTask(name string, task func()) {
 		func() {
 			defer runtime.HandleCrashWithConfig(true, func(r interface{}) {
 				callers := runtime.GetCallers(r)
-				msg := fmt.Sprintf("goroutineName:%s,\nObserved a panic: %#v (%v)\n%v", name, r, r, callers)
+				msg := fmt.Sprintf("GoroutineName:%s,\nObserved a panic: %#v (%v)\n%v", name, r, r, callers)
 				alert.SendByAppName(4, msg)
 			})
 			task()
