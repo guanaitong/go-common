@@ -91,7 +91,7 @@ func NewMessage() *FrigateMessage {
 		hostIp:      system.GetHostIp(),
 		workEnv:     system.GetWorkEnv(),
 		workIdc:     system.GetWorkIdc(),
-		time:        time.Now().Unix(),
+		time:        time.Now().Unix() * 1000,
 	}
 }
 
