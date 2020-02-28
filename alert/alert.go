@@ -1,14 +1,15 @@
 package alert
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/json"
 	"github.com/guanaitong/go-common/runtime"
+	"github.com/guanaitong/go-common/system"
+	"github.com/guanaitong/go-common/tuple"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
-	"net/url"
-	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -16,40 +17,23 @@ import (
 const (
 	URL = "http://message.frigate.devops.wuxingdev.cn"
 
-	BY_CORPCODE_URL = URL + "/message/sendMsgsToUsersByQiyeWeChatId"
+	// way = 0
+	ByAppNameUrl = URL + "/v2/message/sendMsgByAppNames"
 
-	BY_GROUP_URL = URL + "/message/sendMsgsToGroup"
+	// way = 1
+	ByGroupUrl = URL + "/v2/message/sendMsgByGroups"
 
-	BY_APPNAME_URL = URL + "/message/sendMsgsToUserByAppName"
+	// way = 2
+	ByQiWeiXinUrl = URL + "/v2/message/sendMsgByWeChatIds"
 
-	bufferLen = 1000
+	bufferLen = 4096
 )
 
 var (
-	appName   string
-	msgHeader string
-	workEnv   string
-	ch        = make(chan map[string]interface{}, bufferLen)
+	ch = make(chan *FrigateMessage, bufferLen)
 )
 
 func init() {
-	appName = os.Getenv("APP_NAME")
-	if appName == "" {
-		appName = "unknown"
-	}
-	workEnv = os.Getenv("WORK_ENV")
-	if os.Getenv("WORK_ENV") != "" {
-		msgHeader = msgHeader + "env[" + os.Getenv("WORK_ENV") + "],"
-	}
-
-	msgHeader = msgHeader + "server_ip[" + getLocalIP() + "]"
-
-	if os.Getenv("HOSTNAME") != "" {
-		msgHeader = msgHeader + ",host[" + os.Getenv("HOSTNAME") + "]"
-	}
-
-	msgHeader = msgHeader + ".msg: "
-
 	go func() {
 		for {
 			func() {
@@ -66,104 +50,125 @@ func init() {
 	}()
 }
 
-func getLocalIP() string {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		log.Printf("get local ip error:%s", err.Error())
-		return ""
-	}
-	for _, address := range addrs {
-		// check the address type and if it is not a loopback the display it
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				return ipnet.IP.String()
-			}
-		}
-	}
-	return ""
-}
-
 var client = &http.Client{
 	Timeout: time.Second * 5,
+}
+
+type FrigateMessage struct {
+	//发送渠道，默认通过1为企业微信通知
+	Channel int
+	//消息标题
+	Title string
+	//消息内容
+	Content string
+	//当有异常堆栈时，堆栈内容
+	Stack string
+	//模块
+	Module string
+	//标签
+	Tags map[string]string
+
+	// ------------------以下属于系统变量------------------------
+	traceId     string
+	hostIp      string
+	appName     string
+	appInstance string
+	workEnv     string
+	workIdc     string
+	//发送时间
+	time   int64
+	format bool
+
+	receiveInfo tuple.Pair
+	way         int8
+}
+
+func NewMessage() *FrigateMessage {
+	return &FrigateMessage{
+		appName:     system.GetAppName(),
+		appInstance: system.GetAppInstance(),
+		hostIp:      system.GetHostIp(),
+		workEnv:     system.GetWorkEnv(),
+		workIdc:     system.GetWorkIdc(),
+		time:        time.Now().Unix(),
+	}
 }
 
 // 通过工号发送消息
 // 0-没有渠道，1-企业微信，2-邮件，3-短信，4-企业微信+邮件，5-企业微信+短信，6-邮件+短信，7-企业微信+邮件+短信
 func SendByCorpCodes(channel int, msg string, corpCodes ...string) {
-	m := map[string]interface{}{
-		"wechatIdList": strings.Join(corpCodes, ","),
-		"way":          1,
-	}
 	if len(ch) >= bufferLen { //缓存区满，丢弃
 		log.Printf("abort msg %s", msg)
 		return
 	}
-	ch <- buildMsg(channel, msg, m)
+	m := NewMessage()
+	m.receiveInfo = tuple.Pair{
+		Key:   "receiveWeChatIds",
+		Value: strings.Join(corpCodes, ","),
+	}
+	m.Channel = channel
+	m.Content = msg
+	m.way = 2
+	ch <- m
 }
 
 // 通过组发送消息
 // 0-没有渠道，1-企业微信，2-邮件，3-短信，4-企业微信+邮件，5-企业微信+短信，6-邮件+短信，7-企业微信+邮件+短信
 func SendByGroupId(channel int, msg string, groupId int) {
-	m := map[string]interface{}{
-		"groupId": groupId,
-		"way":     2,
-	}
 	if len(ch) >= bufferLen { //缓存区满，丢弃
 		log.Printf("abort msg %s", msg)
 		return
 	}
-	ch <- buildMsg(channel, msg, m)
+	m := NewMessage()
+	m.receiveInfo = tuple.Pair{
+		Key:   "receiveGroups",
+		Value: strconv.Itoa(groupId),
+	}
+	m.Channel = channel
+	m.Content = msg
+	m.way = 1
+	ch <- m
 }
 
 // 通过应用名发送消息，自动获取应用名，不需要传递
 // 0-没有渠道，1-企业微信，2-邮件，3-短信，4-企业微信+邮件，5-企业微信+短信，6-邮件+短信，7-企业微信+邮件+短信
 func SendByAppName(channel int, msg string) {
-	m := map[string]interface{}{
-		"appName": appName,
-		"way":     3,
-	}
 	if len(ch) >= bufferLen { //缓存区满，丢弃
 		log.Printf("abort msg %s", msg)
 		return
 	}
-	ch <- buildMsg(channel, msg, m)
-}
-
-func buildMsg(channel int, msg string, m map[string]interface{}) map[string]interface{} {
-	m["msgContent"] = msgHeader + msg
-	m["channel"] = channel
-	m["time"] = time.Now().Unix() * 1000
-	if workEnv != "" {
-		m["workEnv"] = workEnv
+	m := NewMessage()
+	m.receiveInfo = tuple.Pair{
+		Key:   "receiveAppNames",
+		Value: system.GetAppName(),
 	}
-	return m
+	m.Channel = channel
+	m.Content = msg
+	m.way = 0
+	ch <- m
 }
 
-func send(data map[string]interface{}) error {
-
-	way := data["way"].(int)
+func send(message *FrigateMessage) error {
+	way := message.way
 
 	byUrl := ""
-	if way == 1 {
-		byUrl = BY_CORPCODE_URL
+	if way == 0 {
+		byUrl = ByAppNameUrl
+	} else if way == 1 {
+		byUrl = ByGroupUrl
 	} else if way == 2 {
-		byUrl = BY_GROUP_URL
-	} else if way == 3 {
-		byUrl = BY_APPNAME_URL
+		byUrl = ByQiWeiXinUrl
 	}
-	delete(data, "way")
 
-	value := url.Values{}
-	for k, v := range data {
-		value.Add(k, fmt.Sprint(v))
-	}
-	req, err := http.NewRequest("POST", byUrl, strings.NewReader(value.Encode()))
+	data, _ := json.Marshal(message)
+
+	req, err := http.NewRequest("POST", byUrl, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("User-Agent", "GOLANG_UTIL")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json;charset=utf-8")
 
 	resp, err := client.Do(req)
 

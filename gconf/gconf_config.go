@@ -150,7 +150,7 @@ func configDataEqual(v1, v2 map[string]*configData) bool {
 }
 
 func getStructuredDataMap(appId string) (map[string]*configData, error) {
-	dataMap, err := httpGetMapResp(url + "api/listConfigs?configAppId=" + appId)
+	dataMap, err := httpGetMapResp(baseUrl + "/api/listConfigs?configAppId=" + appId)
 	if err != nil {
 		return nil, err
 	}

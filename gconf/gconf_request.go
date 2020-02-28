@@ -29,7 +29,7 @@ func httpGetMapResp(url string) (map[string]string, error) {
 		}
 		return m, nil
 	} else {
-		return nil, errors.New("resp status code is not 200, it it " + resp.Status + " ,url is " + url)
+		return nil, errors.New("resp status code is not 200, it it " + resp.Status + " ,baseUrl is " + url)
 	}
 }
 
@@ -55,6 +55,6 @@ func httpGetListResp(url string) ([]string, error) {
 		}
 		return m, nil
 	} else {
-		return nil, errors.New("resp status code is not 200, it it " + resp.Status + " ,url is " + url)
+		return nil, errors.New("resp status code is not 200, it it " + resp.Status + " ,baseUrl is " + url)
 	}
 }
