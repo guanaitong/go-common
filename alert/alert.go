@@ -56,28 +56,28 @@ var client = &http.Client{
 
 type FrigateMessage struct {
 	//发送渠道，默认通过1为企业微信通知
-	Channel int
+	Channel int `json:"channel"`
 	//消息标题
-	Title string
+	Title string `json:"title"`
 	//消息内容
-	Content string
+	Content string `json:"content"`
 	//当有异常堆栈时，堆栈内容
-	Stack string
+	Stack string `json:"stack"`
 	//模块
-	Module string
+	Module string `json:"module"`
 	//标签
-	Tags map[string]string
+	Tags map[string]string `json:"tags"`
 
 	// ------------------以下属于系统变量------------------------
-	traceId     string
-	hostIp      string
-	appName     string
-	appInstance string
-	workEnv     string
-	workIdc     string
+	traceId     string `json:"traceId"`
+	hostIp      string `json:"hostIp"`
+	appName     string `json:"appName"`
+	appInstance string `json:"appInstance"`
+	workEnv     string `json:"workEnv"`
+	workIdc     string `json:"workIdc"`
 	//发送时间
-	time   int64
-	format bool
+	time   int64 `json:"time"`
+	format bool  `json:"format"`
 
 	receiveInfo tuple.Pair
 	way         int8
@@ -85,6 +85,7 @@ type FrigateMessage struct {
 
 func NewMessage() *FrigateMessage {
 	return &FrigateMessage{
+		Title:       "frigate 消息通知",
 		appName:     system.GetAppName(),
 		appInstance: system.GetAppInstance(),
 		hostIp:      system.GetHostIp(),
