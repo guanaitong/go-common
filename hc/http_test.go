@@ -60,7 +60,7 @@ func TestPostFormFile(t *testing.T) {
 			"passport": "",
 		},
 		"Headers": map[string]string{
-			"x-code":   "123",
+			"x-code": "123",
 		},
 	}
 	resp, err := PostFormFile("", params)

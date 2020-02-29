@@ -3,12 +3,13 @@ package alert
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/guanaitong/go-common/hc"
 	"github.com/guanaitong/go-common/runtime"
 	"github.com/guanaitong/go-common/system"
 	"github.com/guanaitong/go-common/tuple"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -50,10 +51,6 @@ func init() {
 	}()
 }
 
-var client = &http.Client{
-	Timeout: time.Second * 5,
-}
-
 type FrigateMessage struct {
 	//发送渠道，默认通过1为企业微信通知
 	Channel int `json:"channel"`
@@ -69,15 +66,15 @@ type FrigateMessage struct {
 	Tags map[string]string `json:"tags"`
 
 	// ------------------以下属于系统变量------------------------
-	traceId     string `json:"traceId"`
-	hostIp      string `json:"hostIp"`
-	appName     string `json:"appName"`
-	appInstance string `json:"appInstance"`
-	workEnv     string `json:"workEnv"`
-	workIdc     string `json:"workIdc"`
+	TraceId     string `json:"traceId"`
+	HostIp      string `json:"hostIp"`
+	AppName     string `json:"appName"`
+	AppInstance string `json:"appInstance"`
+	WorkEnv     string `json:"workEnv"`
+	WorkIdc     string `json:"workIdc"`
 	//发送时间
-	time   int64 `json:"time"`
-	format bool  `json:"format"`
+	Time   int64 `json:"time"`
+	Format bool  `json:"format"`
 
 	receiveInfo tuple.Pair
 	way         int8
@@ -86,12 +83,12 @@ type FrigateMessage struct {
 func NewMessage() *FrigateMessage {
 	return &FrigateMessage{
 		Title:       "frigate 消息通知",
-		appName:     system.GetAppName(),
-		appInstance: system.GetAppInstance(),
-		hostIp:      system.GetHostIp(),
-		workEnv:     system.GetWorkEnv(),
-		workIdc:     system.GetWorkIdc(),
-		time:        time.Now().Unix() * 1000,
+		AppName:     system.GetAppName(),
+		AppInstance: system.GetAppInstance(),
+		HostIp:      system.GetHostIp(),
+		WorkEnv:     system.GetWorkEnv(),
+		WorkIdc:     system.GetWorkIdc(),
+		Time:        time.Now().Unix() * 1000,
 	}
 }
 
@@ -161,6 +158,8 @@ func send(message *FrigateMessage) error {
 		byUrl = ByQiWeiXinUrl
 	}
 
+	byUrl = byUrl + "?" + url.QueryEscape(message.receiveInfo.Key.(string)) + "=" + url.QueryEscape(message.receiveInfo.Value.(string))
+
 	data, _ := json.Marshal(message)
 
 	req, err := http.NewRequest("POST", byUrl, bytes.NewBuffer(data))
@@ -171,23 +170,18 @@ func send(message *FrigateMessage) error {
 	req.Header.Set("User-Agent", "GOLANG_UTIL")
 	req.Header.Set("Content-Type", "application/json;charset=utf-8")
 
-	resp, err := client.Do(req)
+	resp, err := hc.Request(req)
 
 	if err != nil {
 		log.Printf("send request fail, error:%s", err)
 		return err
 	}
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 200 {
+	if resp.StatusCode() == 200 {
 		return nil
 	}
 
-	str, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	log.Printf("send request fail, resp_status:%s,body:%s", resp.Status, string(str))
+	log.Printf("send request fail, status:%d,body:%s", resp.StatusCode(), resp.AsString())
+
 	return nil
 }
